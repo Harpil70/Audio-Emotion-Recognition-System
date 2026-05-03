@@ -1,60 +1,133 @@
-# Audio Emotion Recognition System
+# 🎙️ Audio Emotion Recognition System (AERS)
 
-This project is an **Audio Emotion Recognition System (AERS)** built using Python. It uses a Convolutional Neural Network (CNN) to classify human emotions from speech audio files. The system processes audio signals, extracts Mel Spectrograms, and trains a deep learning model to predict emotions such as Happy, Sad, Angry, Fearful, Disgust, Surprised, and Neutral.
+A deep learning project that recognizes human emotions from speech audio using **Mel Spectrograms** and a **Convolutional Neural Network (CNN)**. Trained on RAVDESS and evaluated cross-corpus on TESS to test real-world generalization.
 
-## Datasets
+---
 
-The model is trained and evaluated using two popular public datasets for speech emotion recognition:
+## 📌 Overview
 
-1. **RAVDESS (Ryerson Audio-Visual Database of Emotional Speech and Song)**
-   - Includes speech and song, audio and video. This project utilizes the audio-only speech files.
-   - [Download RAVDESS Dataset on Kaggle](https://www.kaggle.com/datasets/uwrfkaggler/ravdess-emotional-speech-audio)
+This system processes raw `.wav` audio files, converts them into Mel Spectrogram images, and feeds them into a CNN to classify speech into **7 emotion categories**:
 
-2. **TESS (Toronto Emotional Speech Set)**
-   - A set of 200 target words spoken in the carrier phrase "Say the word _____" by two actresses and portraying seven emotions.
-   - [Download TESS Dataset on Kaggle](https://www.kaggle.com/datasets/ejlok1/toronto-emotional-speech-set-tess)
+`Neutral` · `Happy` · `Sad` · `Angry` · `Fearful` · `Disgust` · `Surprised`
 
-## Features
+The key challenge this project addresses is **cross-corpus generalization** — training on one dataset (RAVDESS) and testing on a completely different one (TESS) to evaluate how well the model generalizes beyond the speakers it was trained on.
 
-- **Audio Processing**: Loads audio data and converts them to Mel Spectrograms using `librosa`.
-- **Data Augmentation**: Enhances the training dataset by applying time stretching and injecting random noise to improve model generalization.
-- **Deep Learning Model**: A sequential CNN built with `TensorFlow` and `Keras` including multiple Conv2D layers, Batch Normalization, MaxPooling, Global Average Pooling, and Dropout layers for robust feature extraction and classification.
-- **Class Balancing**: Utilizes `sklearn.utils.class_weight` to compute and apply class weights, ensuring the model doesn't bias towards majority classes.
+---
 
-## Tech Stack & Dependencies
+## 📂 Datasets
 
-- **Python 3.x**
-- **Pandas & NumPy**: For data manipulation and numerical operations.
-- **Librosa**: For audio/music analysis and feature extraction.
-- **Pillow (PIL)**: For image resizing and handling spectrograms as images.
-- **Scikit-learn (sklearn)**: For dataset splitting and computing class weights.
-- **TensorFlow / Keras**: For building and training the neural network.
-- **Matplotlib**: For plotting training history (accuracy/loss curves).
+| Dataset | Speakers | Emotions | Files | Role |
+|---------|----------|----------|-------|------|
+| [RAVDESS](https://www.kaggle.com/datasets/uwrfkaggler/ravdess-emotional-speech-audio) | 24 actors (12M / 12F) | 7 (calm dropped) | ~840 | Training |
+| [TESS](https://www.kaggle.com/datasets/ejlok1/toronto-emotional-speech-set-tess) | 2 actresses | 7 | ~2800 | Cross-corpus Testing |
 
-## How It Works
+> **Note:** Only audio-only speech files from RAVDESS are used (modality=03, channel=01). The "calm" emotion is dropped since TESS has no equivalent label.
 
-1. **Data Loading**: Parses folder structures and filenames to map audio files to their respective emotion labels.
-2. **Feature Extraction (`extract_from_path`)**: 
-   - Audio files are loaded and standardly padded/truncated to a 3-second duration.
-   - Mel Spectrograms are generated, converted to decibels, normalized, and resized into 128x128 images.
-3. **Data Augmentation (`augment`)**: Synthesizes new training examples to increase the dataset size (only applied to the RAVDESS training set).
-4. **Model Training**: A CNN is compiled using the Adam optimizer and Sparse Categorical Crossentropy loss. It trains over 100 epochs with validation tracking.
+---
 
-## Usage
+## 🏗️ Project Pipeline
 
-1. Clone this repository:
-   ```bash
-   git clone https://github.com/Harpil70/Audio-Emotion-Recognition-System.git
-   cd Audio-Emotion-Recognition-System
-   ```
-2. Download the datasets from the links above and extract them into a `dataset/` directory inside the project root:
-   - `dataset/RAVDESS/`
-   - `dataset/TESS/`
-3. Install the required dependencies:
-   ```bash
-   pip install pandas numpy matplotlib librosa pillow scikit-learn tensorflow
-   ```
-4. Open and run the Jupyter Notebook:
-   ```bash
-   jupyter notebook AERS.ipynb
-   ```
+```
+Raw .wav
+  └─ Load mono @ 22050 Hz, pad/truncate to 3s
+      └─ Mel Spectrogram (128 mel bins)
+          └─ Convert to dB scale (power_to_db)
+              └─ Normalize to [0, 1]
+                  └─ Resize to 128×128
+                      └─ Shape: (128, 128, 1) → CNN Input
+```
+
+---
+
+## 🧠 Model Architecture
+
+```
+Input (128, 128, 1)
+│
+├── Conv2D(32) + BatchNorm + ReLU + MaxPool(2×2) + Dropout(0.3)
+├── Conv2D(64) + BatchNorm + ReLU + MaxPool(2×2) + Dropout(0.3)
+├── Conv2D(128) + BatchNorm + ReLU + MaxPool(2×2) + Dropout(0.4)
+│
+├── GlobalAveragePooling2D
+├── Dense(128) + ReLU + Dropout(0.5)
+└── Dense(7, softmax)
+```
+
+---
+
+## ✨ Key Features
+
+- **Mel Spectrogram extraction** using `librosa` — treats audio as a 2D image for the CNN
+- **Data augmentation** (time stretching + noise injection) applied only to RAVDESS training data to combat the small dataset size (~840 files)
+- **Class weight balancing** via `sklearn` to prevent the model from biasing toward majority classes
+- **Cross-corpus evaluation** — model trained on RAVDESS, tested on TESS with no retraining
+
+---
+
+## 🛠️ Tech Stack
+
+| Library | Purpose |
+|---------|---------|
+| `librosa` | Audio loading & Mel Spectrogram extraction |
+| `Pillow` | Spectrogram image resizing |
+| `TensorFlow / Keras` | CNN model building & training |
+| `scikit-learn` | Train/test split & class weight computation |
+| `NumPy / Pandas` | Data manipulation |
+| `Matplotlib / Seaborn` | Training history & confusion matrix plots |
+
+---
+
+## 🚀 Getting Started
+
+**1. Clone the repository**
+```bash
+git clone https://github.com/Harpil70/Audio-Emotion-Recognition-System.git
+cd Audio-Emotion-Recognition-System
+```
+
+**2. Download the datasets** from the links above and place them inside a `dataset/` folder:
+```
+dataset/
+├── RAVDESS/
+│   ├── Actor_01/
+│   ├── Actor_02/
+│   └── ...
+└── TESS/
+    ├── OAF_angry/
+    ├── YAF_happy/
+    └── ...
+```
+
+**3. Install dependencies**
+```bash
+pip install pandas numpy matplotlib librosa pillow scikit-learn tensorflow
+```
+
+**4. Run the notebook**
+```bash
+jupyter notebook AERS.ipynb
+```
+
+---
+
+## 📊 Results
+
+| Evaluation | Accuracy |
+|------------|----------|
+| RAVDESS (validation) | ~75–93% |
+| TESS (cross-corpus) | ~45–52% |
+
+The accuracy drop between RAVDESS and TESS reflects **domain shift** — differences in speaker age, gender distribution, and recording conditions between the two datasets. This is a known challenge in cross-corpus speech emotion recognition.
+
+---
+
+## 📁 Project Structure
+
+```
+Audio-Emotion-Recognition-System/
+├── AERS.ipynb          ← Main notebook
+├── dataset/
+│   ├── RAVDESS/
+│   └── TESS/
+└── README.md
+```
